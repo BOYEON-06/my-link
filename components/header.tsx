@@ -38,6 +38,7 @@ export function Header() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [totalClicks, setTotalClicks] = useState(0)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
   const { setTheme, theme } = useTheme()
 
   useEffect(() => {
@@ -64,11 +65,18 @@ export function Header() {
   }, [user])
 
   const handleLogin = async () => {
+    if (isLoggingIn) return
+    
+    setIsLoggingIn(true)
     const provider = new GoogleAuthProvider()
     try {
       await signInWithPopup(auth, provider)
-    } catch (error) {
-      console.error("Login Error:", error)
+    } catch (error: any) {
+      if (error.code !== "auth/popup-closed-by-user" && error.code !== "auth/cancelled-popup-request") {
+        console.error("Login Error:", error)
+      }
+    } finally {
+      setIsLoggingIn(false)
     }
   }
 
@@ -104,15 +112,17 @@ export function Header() {
           {!loading && (
             user ? (
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-offset-background transition-all hover:ring-2 hover:ring-primary/20">
-                    <Avatar className="h-9 w-9 border">
-                      <AvatarImage src={user.photoURL || ""} alt={user.displayName || "User"} />
-                      <AvatarFallback><UserIcon className="h-5 w-5" /></AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-64" align="end" forceMount>
+                <DropdownMenuTrigger
+                  render={
+                    <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-offset-background transition-all hover:ring-2 hover:ring-primary/20">
+                      <Avatar className="h-9 w-9 border">
+                        <AvatarImage src={user.photoURL || ""} alt={user.displayName || "User"} />
+                        <AvatarFallback><UserIcon className="h-5 w-5" /></AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent className="w-64" align="end">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-bold leading-none">{user.displayName}</p>

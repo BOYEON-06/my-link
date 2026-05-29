@@ -128,25 +128,25 @@ export default function PublicProfilePage() {
         
         {/* Public Header */}
         <div className="flex flex-col items-center text-center">
-           <div className="h-28 w-24 rounded-3xl bg-muted mb-6 overflow-hidden shadow-xl border-4 border-background ring-1 ring-muted">
+           <div className="h-32 w-32 rounded-full bg-primary/10 mb-8 overflow-hidden shadow-2xl shadow-primary/20 p-1.5 border-4 border-primary ring-8 ring-primary/5">
              <img 
                src={profile?.photoURL || `https://api.dicebear.com/9.x/notionists/svg?seed=${targetUid || username}`} 
                alt="Profile" 
-               className="w-full h-full object-cover" 
+               className="w-full h-full object-cover rounded-full" 
              />
            </div>
-           <h1 className="text-2xl font-black tracking-tight text-foreground">
+           <h1 className="text-3xl font-black tracking-tighter text-foreground">
              {profile?.displayName || "My Profile"}
            </h1>
            {profile?.bio && (
-             <p className="text-sm font-medium text-muted-foreground mt-3 max-w-[280px]">
+             <p className="text-sm font-semibold text-muted-foreground mt-4 max-w-[280px] leading-relaxed">
                {profile.bio}
              </p>
            )}
         </div>
 
         {/* Public Links List */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           {links.map((link) => (
             <a
               key={link.id}
@@ -157,25 +157,26 @@ export default function PublicProfilePage() {
               className="block outline-none group"
             >
               <Card 
-                className={`relative flex items-center w-full min-h-[72px] p-4 transition-all duration-300 rounded-2xl border-2 bg-card hover:scale-[1.02] active:scale-[0.98]
+                className={`relative flex flex-col items-center justify-center w-full min-h-[140px] p-6 transition-all duration-500 rounded-3xl border-2 bg-card hover:translate-y-[-4px] active:scale-[0.98]
                   ${link.isHighlighted 
-                    ? 'border-primary shadow-lg shadow-primary/10' 
-                    : 'border-muted hover:border-primary/30'}
+                    ? 'border-primary shadow-xl shadow-primary/20 bg-primary/5' 
+                    : 'border-muted hover:border-primary/50 shadow-sm hover:shadow-xl hover:shadow-primary/5'}
                 `}
               >
-                <div className="shrink-0 mr-4">
-                  <div className="w-12 h-12 rounded-xl bg-muted/50 p-2.5 flex items-center justify-center border border-muted group-hover:bg-primary/5 transition-colors">
-                    {link.faviconUrl ? (
-                      <img src={link.faviconUrl} alt="" className="w-full h-full object-contain" />
-                    ) : (
-                      <LinkIcon className="h-5 w-5 text-muted-foreground opacity-50" />
-                    )}
-                  </div>
+                <div className="w-14 h-14 rounded-2xl bg-white dark:bg-muted/30 p-3 flex items-center justify-center border border-muted group-hover:border-primary/30 shadow-inner transition-colors mb-3">
+                  {link.faviconUrl ? (
+                    <img src={link.faviconUrl} alt="" className="w-full h-full object-contain" />
+                  ) : (
+                    <LinkIcon className="h-6 w-6 text-primary opacity-40" />
+                  )}
                 </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">
+                <div className="text-center w-full">
+                  <span className="font-black text-foreground text-lg group-hover:text-primary transition-colors tracking-tight">
                     {link.title}
                   </span>
+                </div>
+                <div className="absolute right-6 top-6 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                   <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
                 </div>
               </Card>
             </a>
@@ -183,12 +184,12 @@ export default function PublicProfilePage() {
         </div>
         
         {/* Branding Footer */}
-        <div className="mt-10 text-center pb-8">
+        <div className="mt-12 text-center pb-12">
             <a 
               href="/" 
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-foreground text-background font-black text-[11px] uppercase tracking-widest hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-black text-[12px] uppercase tracking-[0.2em] hover:scale-105 transition-all shadow-xl shadow-primary/20"
             >
-              <LinkIcon className="h-3.5 w-3.5" />
+              <LinkIcon className="h-4 w-4 stroke-[3px]" />
               Create your MyLink
             </a>
         </div>

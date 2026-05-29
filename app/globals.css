@@ -1,26 +1,76 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme {
+  /* 프리셋 색상 정의 (핑크/보라 계열) */
+  --color-primary: oklch(0.6 0.3 325);
+  --color-primary-foreground: white;
+  
+  --color-background: white;
+  --color-foreground: black;
+  
+  --color-card: white;
+  --color-card-foreground: black;
+  
+  --color-popover: white;
+  --color-popover-foreground: black;
+  
+  --color-secondary: oklch(0.95 0.01 325);
+  --color-secondary-foreground: oklch(0.3 0.1 325);
+  
+  --color-muted: oklch(0.97 0 0);
+  --color-muted-foreground: oklch(0.4 0 0);
+  
+  --color-accent: oklch(0.95 0.05 325);
+  --color-accent-foreground: oklch(0.3 0.2 325);
+  
+  --color-destructive: oklch(0.6 0.2 25);
+  --color-destructive-foreground: white;
+  
+  --color-border: oklch(0.9 0 0);
+  --color-input: oklch(0.9 0 0);
+  --color-ring: oklch(0.6 0.3 325);
+
+  --radius-lg: 1rem;
+  --radius-md: 0.75rem;
+  --radius-sm: 0.5rem;
+
   --animate-shimmer: shimmer 3s infinite linear;
   --animate-bounce-subtle: bounce-subtle 4s ease-in-out infinite;
 
   @keyframes shimmer {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(50%);
-    }
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(50%); }
   }
 
   @keyframes bounce-subtle {
-    0%, 100% {
-      transform: translateY(-2%);
-      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-    }
-    50% {
-      transform: translateY(0);
-      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-    }
+    0%, 100% { transform: translateY(-2%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+    50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+  }
+}
+
+/* 다크 모드 색상 */
+.dark {
+  --color-background: oklch(0.15 0 0);
+  --color-foreground: white;
+  --color-primary: oklch(0.65 0.25 325);
+  --color-primary-foreground: white;
+  --color-card: oklch(0.2 0 0);
+  --color-card-foreground: white;
+  --color-border: oklch(1 0 0 / 10%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }

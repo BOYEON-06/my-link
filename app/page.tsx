@@ -39,6 +39,7 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [username, setUsername] = useState<string | null>(null)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
   
   // 추가 폼 상태
   const [newTitle, setNewTitle] = useState("")
@@ -108,11 +109,18 @@ export default function Page() {
   }, [user])
 
   const handleLogin = async () => {
+    if (isLoggingIn) return
+    
+    setIsLoggingIn(true)
     const provider = new FirebaseGoogleAuthProvider()
     try {
       await firebaseSignInWithPopup(auth, provider)
-    } catch (error) {
-      console.error("Login Error:", error)
+    } catch (error: any) {
+      if (error.code !== "auth/popup-closed-by-user" && error.code !== "auth/cancelled-popup-request") {
+        console.error("Login Error:", error)
+      }
+    } finally {
+      setIsLoggingIn(false)
     }
   }
 
@@ -131,8 +139,11 @@ export default function Page() {
     if (!url.trim()) return "URL을 입력해주세요."
     let targetUrl = url.trim()
     if (!/^https?:\/\//i.test(targetUrl)) targetUrl = "https://" + targetUrl
-    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/
-    if (!urlPattern.test(targetUrl)) return "올바른 URL 형식이 아닙니다 (예: google.com)."
+    
+    // 경로에 @가 포함된 URL(예: velog.io/@username)도 허용하도록 정규식 수정
+    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-@?=&]*)*\/?$/
+    
+    if (!urlPattern.test(targetUrl)) return "올바른 URL 형식이 아닙니다 (예: velog.io/@username)."
     try {
       new URL(targetUrl)
       return null
@@ -256,7 +267,7 @@ export default function Page() {
       <div className="flex min-h-[calc(100vh-64px)] flex-col items-center justify-center bg-background px-6 py-16 text-center">
         <div className="max-w-md w-full flex flex-col items-center gap-8">
           <div className="space-y-4">
-            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl whitespace-nowrap">
               모든 링크를 <span className="text-primary">하나의 페이지</span>에
             </h1>
             <p className="text-lg text-muted-foreground font-medium">
@@ -264,31 +275,31 @@ export default function Page() {
             </p>
           </div>
           
-          <Card className="p-8 w-full border-2 border-dashed bg-muted/30">
+          <Card className="p-8 w-full border-none shadow-2xl shadow-primary/20 bg-primary/5 ring-1 ring-primary/20">
             <div className="flex flex-col items-center gap-6">
-              <div className="p-4 bg-primary/10 rounded-full text-primary">
-                <LogIn className="h-10 w-10" />
+              <div className="p-5 bg-primary rounded-full text-primary-foreground shadow-lg shadow-primary/40">
+                <LogIn className="h-10 w-10 stroke-[3px]" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-bold">지금 바로 시작하세요</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="text-2xl font-black tracking-tight">지금 바로 시작하세요</h3>
+                <p className="text-sm text-muted-foreground font-medium">
                   링크를 관리하고 프로필을 편집하려면 구글 로그인이 필요합니다.
                 </p>
               </div>
-              <Button onClick={handleLogin} size="lg" className="w-full rounded-xl py-6 text-lg font-bold shadow-lg shadow-primary/20">
+              <Button onClick={handleLogin} size="lg" className="w-full rounded-2xl py-8 text-xl font-black shadow-xl shadow-primary/40 bg-primary text-primary-foreground hover:scale-105 transition-all border-none">
                 구글로 로그인하기
               </Button>
             </div>
           </Card>
           
           <div className="grid grid-cols-2 gap-4 w-full text-left">
-            <div className="p-4 rounded-xl bg-card border">
-              <span className="text-xs font-bold text-primary uppercase tracking-widest">Easy Setup</span>
-              <p className="mt-1 font-medium">30초면 완성하는<br/>나만의 프로필</p>
+            <div className="p-5 rounded-2xl bg-card border-2 border-primary/10 shadow-sm">
+              <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Easy Setup</span>
+              <p className="mt-2 font-bold leading-tight">30초면 완성하는<br/>나만의 프로필</p>
             </div>
-            <div className="p-4 rounded-xl bg-card border">
-              <span className="text-xs font-bold text-primary uppercase tracking-widest">Real-time</span>
-              <p className="mt-1 font-medium">실시간으로 반영되는<br/>미리보기</p>
+            <div className="p-5 rounded-2xl bg-card border-2 border-primary/10 shadow-sm">
+              <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Real-time</span>
+              <p className="mt-2 font-bold leading-tight">실시간으로 반영되는<br/>미리보기</p>
             </div>
           </div>
         </div>
@@ -304,34 +315,32 @@ export default function Page() {
         
         {/* Profile Section */}
         <div className="flex flex-col items-center">
-           <div className="h-24 w-24 rounded-full bg-muted mb-4 overflow-hidden shadow-md flex items-center justify-center p-0.5 border-2 border-primary/20 ring-4 ring-primary/5">
+           <div className="h-24 w-24 rounded-full bg-primary/10 mb-4 overflow-hidden shadow-xl shadow-primary/20 flex items-center justify-center p-1 border-2 border-primary ring-4 ring-primary/10">
              <img src={user.photoURL || `https://api.dicebear.com/9.x/notionists/svg?seed=${user.uid}`} alt="Profile" className="w-full h-full object-cover rounded-full" />
            </div>
-           <h1 className="text-2xl font-bold tracking-tight text-foreground">{user.displayName || "@user"}</h1>
+           <h1 className="text-2xl font-black tracking-tight text-foreground">{user.displayName || "@user"}</h1>
            
            {publicUrl && (
              <a 
                href={publicUrl} 
                target="_blank" 
-               className="text-[11px] font-black text-primary mt-3 hover:underline flex items-center gap-1.5 bg-primary/5 px-4 py-1.5 rounded-full border border-primary/10 transition-all hover:bg-primary/10"
+               className="text-[11px] font-black text-primary-foreground mt-4 hover:scale-105 transition-transform flex items-center gap-1.5 bg-primary px-5 py-2 rounded-full shadow-lg shadow-primary/30"
              >
                <LinkIcon className="h-3 w-3" />
                MYLINK.COM{publicUrl.toUpperCase()}
              </a>
            )}
-
-           <p className="text-sm font-medium text-muted-foreground mt-4">
-             Welcome back to your MyLink!
-           </p>
         </div>
 
         {/* Add Link Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="w-full rounded-2xl border-dashed border-2 py-8 text-lg font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all duration-300">
-              <Plus className="mr-2 h-5 w-5" /> 새 링크 추가하기
-            </Button>
-          </DialogTrigger>
+          <DialogTrigger
+            render={
+              <Button size="lg" className="w-full rounded-2xl py-8 text-lg font-black shadow-xl shadow-primary/20 hover:scale-[1.01] transition-all bg-primary text-primary-foreground border-none">
+                <Plus className="mr-2 h-6 w-6 stroke-[3px]" /> 새 링크 추가하기
+              </Button>
+            }
+          />
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>새 링크 추가</DialogTitle>
