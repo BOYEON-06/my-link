@@ -7,7 +7,8 @@
 ```mermaid
 graph TD
     A[랜딩 페이지 / 로그인] -->|구글 로그인| B{초기 사용자?}
-    B -->|Yes| C[Username 설정 페이지]
+    B -->|Yes| C[U
+    sername 설정 페이지]
     B -->|No| D[관리자 대시보드]
     C --> D
     D -->|프로필 수정 / 링크 관리| D
