@@ -1,9 +1,122 @@
-import { dummyLinks } from "@/data/link"
+"use client"
+
+import React, { useState } from "react"
+import { dummyLinks, Link } from "@/data/link"
 import { Card } from "@/components/ui/card"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger, 
+  DialogFooter
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Plus } from "lucide-react"
 
 export default function Page() {
+  const [links, setLinks] = useState<Link[]>(dummyLinks)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  
+  // 폼 상태
+  const [newTitle, setNewTitle] = useState("")
+  const [newUrl, setNewUrl] = useState("")
+  
+  // 폼 검증 에러 상태
+  const [errors, setErrors] = useState<{ title?: string; url?: string }>({})
+
+  const resetForm = () => {
+    setNewTitle("")
+    setNewUrl("")
+    setErrors({})
+  }
+
+  // 다이얼로그 상태 변경 핸들러
+  const handleOpenChange = (open: boolean) => {
+    setIsDialogOpen(open)
+    if (!open) {
+      resetForm()
+    }
+  }
+
+  // URL 유효성 검사 함수
+  const validateUrl = (url: string) => {
+    if (!url.trim()) return "URL을 입력해주세요."
+    
+    let targetUrl = url.trim()
+    if (!/^https?:\/\//i.test(targetUrl)) {
+      targetUrl = "https://" + targetUrl
+    }
+
+    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/
+    if (!urlPattern.test(targetUrl)) {
+      return "올바른 URL 형식이 아닙니다 (예: google.com)."
+    }
+
+    try {
+      new URL(targetUrl)
+      return null
+    } catch {
+      return "유효한 URL이 아닙니다."
+    }
+  }
+
+  // 링크 추가 핸들러
+  const handleAddLink = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    const newErrors: { title?: string; url?: string } = {}
+    
+    // 타이틀 검증
+    if (!newTitle.trim()) {
+      newErrors.title = "타이틀을 입력해주세요."
+    } else if (newTitle.trim().length > 40) {
+      newErrors.title = "타이틀은 40자를 넘을 수 없습니다."
+    }
+
+    // URL 검증
+    const urlError = validateUrl(newUrl)
+    if (urlError) {
+      newErrors.url = urlError
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+
+    try {
+      let finalUrl = newUrl.trim()
+      if (!/^https?:\/\//i.test(finalUrl)) {
+        finalUrl = "https://" + finalUrl
+      }
+      
+      const domain = new URL(finalUrl).hostname
+      const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+      
+      const newLink: Link = {
+        id: Date.now().toString(),
+        title: newTitle.trim(),
+        url: finalUrl,
+        faviconUrl: faviconUrl,
+        order: links.length,
+        isActive: true,
+        isHighlighted: false,
+        clickCount: 0
+      }
+
+      setLinks(prev => [...prev, newLink])
+      resetForm()
+      setIsDialogOpen(false)
+    } catch(err) {
+      setErrors({ url: "URL 처리 중 오류가 발생했습니다." })
+    }
+  }
+
   // 활성화된 링크만 필터링하고 order 순으로 정렬
-  const sortedActiveLinks = dummyLinks
+  const sortedActiveLinks = links
     .filter((link) => link.isActive)
     .sort((a, b) => a.order - b.order)
 
@@ -12,7 +125,7 @@ export default function Page() {
       <div className="w-full max-w-md flex flex-col gap-6">
         
         {/* Profile Section */}
-        <div className="mb-6 flex flex-col items-center">
+        <div className="mb-2 flex flex-col items-center">
            <div className="h-24 w-24 rounded-full bg-muted mb-4 overflow-hidden shadow-sm flex items-center justify-center p-0.5 border border-border">
              <img src="https://api.dicebear.com/9.x/notionists/svg?seed=my_username" alt="Profile" className="w-full h-full object-cover rounded-full" />
            </div>
@@ -21,6 +134,62 @@ export default function Page() {
              Welcome to my link tree!
            </p>
         </div>
+
+        {/* Add Link Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="w-full rounded-xl border-dashed border-2 py-6 text-muted-foreground hover:text-foreground">
+              <Plus className="mr-2 h-4 w-4" /> 새 링크 추가
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>새 링크 추가</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAddLink} className="flex flex-col gap-5 py-4" noValidate>
+              <div className="grid gap-2">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="title">타이틀</Label>
+                  <span className={`text-[10px] font-medium ${newTitle.length > 40 ? "text-red-500" : "text-muted-foreground"}`}>
+                    {newTitle.length}/40
+                  </span>
+                </div>
+                <Input 
+                  id="title" 
+                  placeholder="예: 인스타그램, 블로그" 
+                  value={newTitle}
+                  onChange={(e) => {
+                    setNewTitle(e.target.value)
+                    if (errors.title) setErrors(prev => ({ ...prev, title: undefined }))
+                  }}
+                  autoComplete="off"
+                  className={errors.title ? "border-red-500 focus-visible:ring-red-500 bg-red-50/10" : ""}
+                />
+                {errors.title && <p className="text-xs font-medium text-red-500 animate-in fade-in slide-in-from-top-1">{errors.title}</p>}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="url">URL</Label>
+                <Input 
+                  id="url" 
+                  placeholder="velog.io/@my_username" 
+                  value={newUrl}
+                  onChange={(e) => {
+                    setNewUrl(e.target.value)
+                    if (errors.url) setErrors(prev => ({ ...prev, url: undefined }))
+                  }}
+                  autoComplete="off"
+                  className={errors.url ? "border-red-500 focus-visible:ring-red-500 bg-red-50/10" : ""}
+                />
+                {errors.url && <p className="text-xs font-medium text-red-500 animate-in fade-in slide-in-from-top-1">{errors.url}</p>}
+              </div>
+              <DialogFooter className="mt-2">
+                <Button type="submit" className="w-full sm:w-auto">
+                  저장하기
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {/* Links Section */}
         <div className="flex flex-col gap-4">
