@@ -41,7 +41,7 @@ export default function Page() {
   useEffect(() => {
     const q = query(
       collection(db, "users", "anonymous", "links"),
-      orderBy("order", "asc")
+      orderBy("createdAt", "desc")
     )
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
