@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export interface Link {
   id: string;
   title: string;
@@ -10,4 +12,8 @@ export interface Link {
   isActive: boolean;
   isHighlighted: boolean;
   clickCount: number;
+  
+  // 타임스탬프 필드
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
 }
