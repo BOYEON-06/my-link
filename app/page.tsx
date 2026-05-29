@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState } from "react"
-import { dummyLinks, Link } from "@/data/link"
+import React, { useState, useEffect } from "react"
+import { Link } from "@/data/link"
 import { Card } from "@/components/ui/card"
 import { 
   Dialog, 
@@ -14,10 +14,20 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Plus } from "lucide-react"
+import { Plus, Loader2 } from "lucide-react"
+import { db } from "@/lib/firebase"
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  orderBy, 
+  onSnapshot,
+  Timestamp 
+} from "firebase/firestore"
 
 export default function Page() {
-  const [links, setLinks] = useState<Link[]>(dummyLinks)
+  const [links, setLinks] = useState<Link[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   
   // 폼 상태
@@ -26,6 +36,28 @@ export default function Page() {
   
   // 폼 검증 에러 상태
   const [errors, setErrors] = useState<{ title?: string; url?: string }>({})
+
+  // Firestore에서 실시간으로 링크 목록 불러오기
+  useEffect(() => {
+    const q = query(
+      collection(db, "users", "anonymous", "links"),
+      orderBy("order", "asc")
+    )
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const linksData: Link[] = []
+      querySnapshot.forEach((doc) => {
+        linksData.push({ id: doc.id, ...doc.data() } as Link)
+      })
+      setLinks(linksData)
+      setIsLoading(false)
+    }, (error) => {
+      console.error("Error fetching links: ", error)
+      setIsLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [])
 
   const resetForm = () => {
     setNewTitle("")
@@ -64,7 +96,7 @@ export default function Page() {
   }
 
   // 링크 추가 핸들러
-  const handleAddLink = (e: React.FormEvent) => {
+  const handleAddLink = async (e: React.FormEvent) => {
     e.preventDefault()
     
     const newErrors: { title?: string; url?: string } = {}
@@ -96,22 +128,24 @@ export default function Page() {
       const domain = new URL(finalUrl).hostname
       const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
       
-      const newLink: Link = {
-        id: Date.now().toString(),
+      const newLinkData = {
         title: newTitle.trim(),
         url: finalUrl,
         faviconUrl: faviconUrl,
         order: links.length,
         isActive: true,
         isHighlighted: false,
-        clickCount: 0
+        clickCount: 0,
+        createdAt: Timestamp.now()
       }
 
-      setLinks(prev => [...prev, newLink])
+      await addDoc(collection(db, "users", "anonymous", "links"), newLinkData)
+      
       resetForm()
       setIsDialogOpen(false)
     } catch(err) {
-      setErrors({ url: "URL 처리 중 오류가 발생했습니다." })
+      console.error("Error adding link: ", err)
+      setErrors({ url: "링크 저장 중 오류가 발생했습니다." })
     }
   }
 
@@ -193,43 +227,54 @@ export default function Page() {
 
         {/* Links Section */}
         <div className="flex flex-col gap-4">
-          {sortedActiveLinks.map((link) => {
-            const isHighlighted = link.isHighlighted;
-            
-            return (
-              <a
-                key={link.id}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block outline-none"
-              >
-                <Card 
-                  className={`group relative flex items-center w-full min-h-[72px] transition-transform duration-200 overflow-hidden rounded-xl border
-                    hover:-translate-y-0.5 hover:shadow-md bg-card
-                    ${isHighlighted ? 'animate-bounce-subtle border-primary/40 shadow-sm' : 'border-border shadow-sm'}
-                  `}
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Loader2 className="h-8 w-8 animate-spin mb-2 opacity-50" />
+              <p className="text-sm font-medium">링크를 불러오는 중...</p>
+            </div>
+          ) : sortedActiveLinks.length === 0 ? (
+            <div className="text-center py-12 border-2 border-dashed border-muted rounded-xl">
+              <p className="text-sm text-muted-foreground">등록된 링크가 없습니다.</p>
+            </div>
+          ) : (
+            sortedActiveLinks.map((link) => {
+              const isHighlighted = link.isHighlighted;
+              
+              return (
+                <a
+                  key={link.id}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block outline-none"
                 >
-                  {/* Shimmer effect inside highlighted card */}
-                  {isHighlighted && (
-                    <div className="absolute inset-0 -z-10 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-80 w-[200%] animate-shimmer pointer-events-none" />
-                  )}
-
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                    {link.faviconUrl ? (
-                      <img src={link.faviconUrl} alt={link.title} className="w-10 h-10 rounded-md object-contain shrink-0 bg-transparent p-0.5" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-md bg-muted shrink-0" />
+                  <Card 
+                    className={`group relative flex items-center w-full min-h-[72px] transition-transform duration-200 overflow-hidden rounded-xl border
+                      hover:-translate-y-0.5 hover:shadow-md bg-card
+                      ${isHighlighted ? 'animate-bounce-subtle border-primary/40 shadow-sm' : 'border-border shadow-sm'}
+                    `}
+                  >
+                    {/* Shimmer effect inside highlighted card */}
+                    {isHighlighted && (
+                      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-80 w-[200%] animate-shimmer pointer-events-none" />
                     )}
-                  </div>
-                  
-                  <div className="w-full text-center px-16">
-                    <span className="font-medium text-foreground">{link.title}</span>
-                  </div>
-                </Card>
-              </a>
-            )
-          })}
+
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                      {link.faviconUrl ? (
+                        <img src={link.faviconUrl} alt={link.title} className="w-10 h-10 rounded-md object-contain shrink-0 bg-transparent p-0.5" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-md bg-muted shrink-0" />
+                      )}
+                    </div>
+                    
+                    <div className="w-full text-center px-16">
+                      <span className="font-medium text-foreground">{link.title}</span>
+                    </div>
+                  </Card>
+                </a>
+              )
+            })
+          )}
         </div>
         
         {/* Footer */}
