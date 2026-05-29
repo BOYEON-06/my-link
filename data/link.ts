@@ -38,8 +38,8 @@ export const dummyLinks: Link[] = [
   {
     id: "3",
     title: "블로그",
-    url: "https://myblog.com",
-    faviconUrl: "https://www.google.com/s2/favicons?domain=myblog.com&sz=64",
+    url: "https://velog.io/@my_username",
+    faviconUrl: "https://www.google.com/s2/favicons?domain=velog.io&sz=64",
     order: 2,
     isActive: true,
     isHighlighted: false,
